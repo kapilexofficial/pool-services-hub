@@ -1,0 +1,123 @@
+.search-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.search-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.search-header h1 {
+  margin: 0 0 10px 0;
+  font-size: 36px;
+  color: #333;
+}
+
+.search-header p {
+  margin: 0;
+  color: #666;
+  font-size: 16px;
+}
+
+.search-filters {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  margin-bottom: 40px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  align-items: flex-end;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-group label {
+  margin-bottom: 8px;
+  color: #333;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.filter-group input,
+.filter-group select {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.3s;
+}
+
+.filter-group input:focus,
+.filter-group select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.search-btn {
+  padding: 12px 30px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  height: 48px;
+}
+
+.search-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+}
+
+.error-message {
+  background: #fee;
+  color: #c33;
+  padding: 15px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  border-left: 4px solid #c33;
+}
+
+.professionals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 30px;
+  min-height: 200px;
+}
+
+.loading,
+.no-results {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 20px;
+  color: #666;
+  font-size: 18px;
+}
+
+.no-results p {
+  margin: 10px 0;
+}
+
+@media (max-width: 768px) {
+  .search-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .search-header h1 {
+    font-size: 28px;
+  }
+
+  .professionals-grid {
+    grid-template-columns: 1fr;
+  }
+}
