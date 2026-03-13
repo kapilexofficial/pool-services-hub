@@ -1,50 +1,95 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { useAuth } from './hooks/useAuth'
 import './App.css'
 
 export default function App() {
+  const { user, session, loading, error, signup, login, logout, checkAuth } = useAuth()
   const [userType, setUserType] = useState(null)
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [formData, setFormData] = useState({ email: '', password: '', name: '' })
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [formError, setFormError] = useState('')
+  const [isSignup, setIsSignup] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+
+  // Check auth state on mount
+  useEffect(() => {
+    checkAuth()
+  }, [])
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
+    setFormError('')
   }
 
   const handleSignup = async (e) => {
     e.preventDefault()
-    setError('')
-    setLoading(true)
+    setFormError('')
+    setSubmitting(true)
 
     try {
-      // Placeholder para Supabase signup
       if (!formData.email || !formData.password || !formData.name) {
         throw new Error('Por favor preencha todos os campos')
       }
-      
-      // Aqui conectaremos com Supabase depois
-      console.log('Signup data:', { ...formData, userType })
-      
-      // Por enquanto, simula login bem-sucedido
-      setIsLoggedIn(true)
+
+      // Extra data for professionals
+      const extraData = userType === 'professional' 
+        ? {
+            years_experience: document.querySelector('input[placeholder*="anos"]')?.value || 0,
+            company_name: document.querySelector('input[placeholder*="empresa"]')?.value || '',
+          }
+        : {}
+
+      await signup(formData.email, formData.password, formData.name, userType, extraData)
       setFormData({ email: '', password: '', name: '' })
     } catch (err) {
-      setError(err.message)
+      setFormError(err.message || 'Erro ao fazer cadastro')
     } finally {
-      setLoading(false)
+      setSubmitting(false)
     }
   }
 
-  const handleLogout = () => {
-    setIsLoggedIn(false)
-    setUserType(null)
-    setFormData({ email: '', password: '', name: '' })
+  const handleLogin = async (e) => {
+    e.preventDefault()
+    setFormError('')
+    setSubmitting(true)
+
+    try {
+      if (!formData.email || !formData.password) {
+        throw new Error('Por favor preencha email e senha')
+      }
+
+      await login(formData.email, formData.password)
+      setFormData({ email: '', password: '', name: '' })
+    } catch (err) {
+      setFormError(err.message || 'Erro ao fazer login')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  // Landing page
-  if (!userType && !isLoggedIn) {
+  const handleLogout = async () => {
+    try {
+      await logout()
+      setUserType(null)
+    } catch (err) {
+      setFormError(err.message || 'Erro ao fazer logout')
+    }
+  }
+
+  // Loading state
+  if (loading && !user) {
+    return (
+      <div className="landing">
+        <div className="hero">
+          <h1>🏊‍♂️ Services Hub</h1>
+          <p>Carregando...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Landing page (não logado)
+  if (!user && !session) {
     return (
       <div className="landing">
         <div className="hero">
@@ -54,50 +99,71 @@ export default function App() {
             Marketplace pra contratar e oferecer serviços de piscina
           </p>
           
-          <div className="cta-buttons">
-            <button 
-              onClick={() => setUserType('client')}
-              className="btn btn-primary"
-            >
-              👤 Sou Cliente
-            </button>
-            <button 
-              onClick={() => setUserType('professional')}
-              className="btn btn-secondary"
-            >
-              🔧 Sou Profissional
-            </button>
-          </div>
+          {!userType && (
+            <div className="cta-buttons">
+              <button 
+                onClick={() => {
+                  setUserType('client')
+                  setIsSignup(true)
+                }}
+                className="btn btn-primary"
+              >
+                👤 Sou Cliente
+              </button>
+              <button 
+                onClick={() => {
+                  setUserType('professional')
+                  setIsSignup(true)
+                }}
+                className="btn btn-secondary"
+              >
+                🔧 Sou Profissional
+              </button>
+            </div>
+          )}
         </div>
       </div>
     )
   }
 
   // Formulário de signup/login
-  if (userType && !isLoggedIn) {
+  if (userType && !user) {
     return (
       <div className="auth-container">
         <div className="auth-card">
           <button 
-            onClick={() => setUserType(null)}
+            onClick={() => {
+              setUserType(null)
+              setIsSignup(true)
+              setFormData({ email: '', password: '', name: '' })
+              setFormError('')
+            }}
             className="back-btn"
           >
             ← Voltar
           </button>
 
           <h2>
-            {userType === 'client' ? '👤 Cadastro - Cliente' : '🔧 Cadastro - Profissional'}
+            {isSignup 
+              ? (userType === 'client' ? '👤 Cadastro - Cliente' : '🔧 Cadastro - Profissional')
+              : '🔓 Login'
+            }
           </h2>
 
-          <form onSubmit={handleSignup}>
-            <input
-              type="text"
-              name="name"
-              placeholder="Seu nome"
-              value={formData.name}
-              onChange={handleInputChange}
-              required
-            />
+          {error && <p className="error">{error}</p>}
+          {formError && <p className="error">{formError}</p>}
+
+          <form onSubmit={isSignup ? handleSignup : handleLogin}>
+            {isSignup && (
+              <input
+                type="text"
+                name="name"
+                placeholder="Seu nome"
+                value={formData.name}
+                onChange={handleInputChange}
+                required
+              />
+            )}
             
             <input
               type="email"
@@ -117,7 +183,7 @@ export default function App() {
               required
             />
 
-            {userType === 'professional' && (
+            {isSignup && userType === 'professional' && (
               <>
                 <input
                   type="text"
@@ -132,29 +198,44 @@ export default function App() {
               </>
             )}
 
-            {error && <p className="error">{error}</p>}
-
             <button 
               type="submit"
-              disabled={loading}
+              disabled={submitting}
               className="btn btn-primary"
             >
-              {loading ? 'Processando...' : 'Cadastrar'}
+              {submitting ? 'Processando...' : isSignup ? 'Cadastrar' : 'Login'}
             </button>
           </form>
+
+          <p style={{ marginTop: '20px', textAlign: 'center', color: '#666' }}>
+            {isSignup ? 'Já tem conta? ' : 'Sem conta? '}
+            <button
+              onClick={() => setIsSignup(!isSignup)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#667eea',
+                cursor: 'pointer',
+                textDecoration: 'underline',
+                fontWeight: 'bold',
+              }}
+            >
+              {isSignup ? 'Login' : 'Cadastre-se'}
+            </button>
+          </p>
         </div>
       </div>
     )
   }
 
-  // Dashboard após login
-  if (isLoggedIn) {
+  // Dashboard (logado)
+  if (user && session) {
     return (
       <div className="dashboard">
         <div className="dashboard-header">
-          <h1>✅ Bem-vindo!</h1>
+          <h1>✅ Bem-vindo, {user.name}!</h1>
           <p>
-            {userType === 'client' 
+            {user.user_type === 'client' 
               ? '👤 Você está logado como Cliente' 
               : '🔧 Você está logado como Profissional'}
           </p>
@@ -163,14 +244,20 @@ export default function App() {
         <div className="dashboard-content">
           <div className="card">
             <h3>Seu Perfil</h3>
-            <p>Email: {formData.email}</p>
-            <p>Nome: {formData.name}</p>
-            <p>Tipo: {userType === 'client' ? 'Cliente' : 'Profissional'}</p>
+            <p><strong>Email:</strong> {user.email}</p>
+            <p><strong>Nome:</strong> {user.name}</p>
+            <p><strong>Tipo:</strong> {user.user_type === 'client' ? 'Cliente' : 'Profissional'}</p>
+            {user.user_type === 'professional' && user.company_name && (
+              <p><strong>Empresa:</strong> {user.company_name}</p>
+            )}
+            {user.user_type === 'professional' && user.years_experience && (
+              <p><strong>Experiência:</strong> {user.years_experience} anos</p>
+            )}
           </div>
 
           <div className="card">
             <h3>Próximos Passos</h3>
-            {userType === 'client' ? (
+            {user.user_type === 'client' ? (
               <ul>
                 <li>Buscar profissionais por serviço</li>
                 <li>Agendar serviços</li>
@@ -184,13 +271,16 @@ export default function App() {
               </ul>
             )}
           </div>
+
+          {error && <p className="error">{error}</p>}
         </div>
 
         <button 
           onClick={handleLogout}
+          disabled={submitting}
           className="btn btn-danger"
         >
-          Sair
+          {submitting ? 'Saindo...' : 'Sair'}
         </button>
       </div>
     )
